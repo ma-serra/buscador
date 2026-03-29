@@ -45,13 +45,11 @@ def monta_url_facebook(estado, carro):
 
     return f"https://www.facebook.com/marketplace/{cidade_slug}/search/?query={carro_encoded}&exact=false"
 
-    print()
-
 def get_dom(estado, carro):
     url = monta_url_facebook(estado, carro)
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)  # Use True se quiser rodar em background
+        browser = p.chromium.launch(headless=True)  # Use False para modo visual (debug)
         context = browser.new_context(
             user_agent=ua.random,
             locale="pt-BR",

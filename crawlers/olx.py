@@ -8,7 +8,7 @@ def get_dom(estado, carro):
     url = f"https://www.olx.com.br/estado-{estado}?q={carro}"
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(headless=True)
 
         context = browser.new_context(
             user_agent=ua.random,
