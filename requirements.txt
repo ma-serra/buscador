@@ -16,5 +16,5 @@ pyee==13.0.0
 requests==2.32.3
 soupsieve==2.7
 typing_extensions==4.14.0
-urllib3==2.4.0
+urllib3==2.6.3
 Werkzeug==3.1.3
