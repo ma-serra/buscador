@@ -48,7 +48,7 @@ def get_dom(estado, carro):
     url = monta_url_icarros(estado, carro)
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(headless=True)
 
         context = browser.new_context(
             user_agent=ua.random,

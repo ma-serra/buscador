@@ -10,7 +10,7 @@ def get_dom(carro):
     url = f"https://www.napista.com.br/busca/{carro_formatado}?pn=1"
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(headless=True)
 
         context = browser.new_context(
             user_agent=ua.random,
