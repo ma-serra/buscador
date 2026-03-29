@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buscador de Carros</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      color: #222;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a73e8;
+      color: #fff;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 700; }
+    header span { font-size: 1.6rem; }
+
+    main { max-width: 960px; margin: 32px auto; padding: 0 16px; }
+
+    /* ── form card ── */
+    .form-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.08);
+      padding: 28px 32px;
+      margin-bottom: 32px;
+    }
+    .form-card h2 { font-size: 1.1rem; margin-bottom: 20px; color: #1a73e8; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: .85rem; font-weight: 600; color: #555; }
+    .field input, .field select {
+      padding: 10px 12px;
+      border: 1px solid #d0d5dd;
+      border-radius: 8px;
+      font-size: .95rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .field input:focus, .field select:focus { border-color: #1a73e8; }
+    .field.hidden { display: none; }
+
+    .btn-search {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-search:hover { background: #1558b0; }
+    .btn-search:disabled { background: #9ab8f0; cursor: not-allowed; }
+
+    /* ── feedback ── */
+    #status {
+      text-align: center;
+      padding: 12px;
+      font-size: .95rem;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    #status.loading { display: block; background: #e8f0fe; color: #1a73e8; }
+    #status.error   { display: block; background: #fce8e6; color: #c5221f; }
+    #status.empty   { display: block; background: #fef7e0; color: #b06000; }
+
+    /* ── results ── */
+    #results-header {
+      font-size: .95rem;
+      color: #555;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+
+    .card-img {
+      width: 100%;
+      height: 170px;
+      object-fit: cover;
+      background: #e9ecef;
+    }
+    .card-img-placeholder {
+      width: 100%;
+      height: 170px;
+      background: #e9ecef;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      color: #aaa;
+    }
+
+    .card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-price {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #1a73e8;
+    }
+
+    .card-details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .tag {
+      background: #f0f2f5;
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: .78rem;
+      color: #444;
+    }
+
+    .card-location {
+      font-size: .82rem;
+      color: #777;
+      margin-top: 4px;
+    }
+
+    .card-footer {
+      padding: 12px 16px;
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-source { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: #888; }
+    .card-source img { width: 16px; height: 16px; border-radius: 3px; }
+
+    .btn-view {
+      padding: 7px 16px;
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: .82rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-view:hover { background: #1558b0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span>🚗</span>
+  <h1>Buscador de Carros</h1>
+</header>
+
+<main>
+  <div class="form-card">
+    <h2>🔍 Pesquisar anúncios</h2>
+    <div class="form-grid">
+
+      <!-- Site -->
+      <div class="field">
+        <label for="site">Site</label>
+        <select id="site">
+          <option value="olx">OLX</option>
+          <option value="icarros">iCarros</option>
+          <option value="webmotors">WebMotors</option>
+          <option value="napista">NaPista</option>
+          <option value="facebook">Facebook Marketplace</option>
+          <option value="mobiauto">Mobiauto</option>
+        </select>
+      </div>
+
+      <!-- Estado -->
+      <div class="field" id="field-estado">
+        <label for="estado">Estado</label>
+        <select id="estado">
+          <option value="">Selecione...</option>
+          <option value="ac">Acre (AC)</option>
+          <option value="al">Alagoas (AL)</option>
+          <option value="am">Amazonas (AM)</option>
+          <option value="ap">Amapá (AP)</option>
+          <option value="ba">Bahia (BA)</option>
+          <option value="ce">Ceará (CE)</option>
+          <option value="df">Distrito Federal (DF)</option>
+          <option value="es">Espírito Santo (ES)</option>
+          <option value="go">Goiás (GO)</option>
+          <option value="ma">Maranhão (MA)</option>
+          <option value="mg">Minas Gerais (MG)</option>
+          <option value="ms">Mato Grosso do Sul (MS)</option>
+          <option value="mt">Mato Grosso (MT)</option>
+          <option value="pa">Pará (PA)</option>
+          <option value="pb">Paraíba (PB)</option>
+          <option value="pe">Pernambuco (PE)</option>
+          <option value="pi">Piauí (PI)</option>
+          <option value="pr">Paraná (PR)</option>
+          <option value="rj">Rio de Janeiro (RJ)</option>
+          <option value="rn">Rio Grande do Norte (RN)</option>
+          <option value="ro">Rondônia (RO)</option>
+          <option value="rr">Roraima (RR)</option>
+          <option value="rs">Rio Grande do Sul (RS)</option>
+          <option value="sc">Santa Catarina (SC)</option>
+          <option value="sp">São Paulo (SP)</option>
+          <option value="to">Tocantins (TO)</option>
+        </select>
+      </div>
+
+      <!-- Carro (hidden for webmotors) -->
+      <div class="field" id="field-carro">
+        <label for="carro">Modelo do carro</label>
+        <input type="text" id="carro" placeholder="Ex: kwid, civic, gol" />
+      </div>
+
+      <!-- Marca (visible for webmotors and mobiauto) -->
+      <div class="field hidden" id="field-marca">
+        <label for="marca">Marca</label>
+        <input type="text" id="marca" placeholder="Ex: fiat, chevrolet" />
+      </div>
+
+      <!-- Modelo WebMotors (visible only for webmotors) -->
+      <div class="field hidden" id="field-modelo">
+        <label for="modelo">Modelo</label>
+        <input type="text" id="modelo" placeholder="Ex: uno, onix" />
+      </div>
+
+    </div>
+
+    <button class="btn-search" id="btn-search" onclick="buscar()">Buscar</button>
+  </div>
+
+  <div id="status"></div>
+  <div id="results-header"></div>
+  <div class="cards" id="cards"></div>
+</main>
+
+<script>
+  const site      = document.getElementById('site');
+  const fEstado   = document.getElementById('field-estado');
+  const fCarro    = document.getElementById('field-carro');
+  const fMarca    = document.getElementById('field-marca');
+  const fModelo   = document.getElementById('field-modelo');
+
+  function atualizarCampos() {
+    const s = site.value;
+    fEstado.classList.toggle('hidden', s === 'napista');
+    fCarro.classList.toggle('hidden',  s === 'webmotors');
+    fMarca.classList.toggle('hidden',  s !== 'webmotors' && s !== 'mobiauto');
+    fModelo.classList.toggle('hidden', s !== 'webmotors');
+  }
+
+  site.addEventListener('change', atualizarCampos);
+  atualizarCampos();
+
+  function formatarPreco(preco) {
+    if (preco == null || preco === '' || preco === 0) return 'Sob consulta';
+    const n = parseFloat(preco);
+    if (isNaN(n)) return preco;
+    return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+
+  function formatarKm(km) {
+    if (km == null || km === '' || km === 0) return null;
+    const n = parseInt(km);
+    if (isNaN(n) || n === 0) return null;
+    return n.toLocaleString('pt-BR') + ' km';
+  }
+
+  function criarCard(carro) {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const titulo = [carro.marca, carro.modelo, carro.ano].filter(Boolean).join(' ') || 'Veículo';
+
+    const imgHtml = carro.imagem
+      ? `<img class="card-img" src="${escHtml(carro.imagem)}" alt="${escHtml(titulo)}" onerror="this.style.display='none';this.nextSibling.style.display='flex'" /><div class="card-img-placeholder" style="display:none">🚗</div>`
+      : `<div class="card-img-placeholder">🚗</div>`;
+
+    const km  = formatarKm(carro.quilometragem);
+    const tags = [
+      carro.combustivel,
+      carro.cambio,
+      km
+    ].filter(Boolean).map(t => `<span class="tag">${escHtml(t)}</span>`).join('');
+
+    const iconHtml = carro.site_icon
+      ? `<img src="${escHtml(carro.site_icon)}" alt="ícone" />`
+      : '🌐';
+
+    card.innerHTML = `
+      ${imgHtml}
+      <div class="card-body">
+        <div class="card-title">${escHtml(titulo)}</div>
+        <div class="card-price">${escHtml(formatarPreco(carro.preco))}</div>
+        <div class="card-details">${tags}</div>
+        ${carro.localizacao ? `<div class="card-location">📍 ${escHtml(carro.localizacao)}</div>` : ''}
+      </div>
+      <div class="card-footer">
+        <div class="card-source">${iconHtml} ${escHtml(site.options[site.selectedIndex].text)}</div>
+        ${carro.link ? `<a class="btn-view" href="${escHtml(carro.link)}" target="_blank" rel="noopener noreferrer">Ver anúncio</a>` : ''}
+      </div>
+    `;
+    return card;
+  }
+
+  function escHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function setStatus(msg, tipo) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = tipo;
+  }
+
+  async function buscar() {
+    const s      = document.getElementById('site').value;
+    const estado = document.getElementById('estado').value;
+    const carro  = document.getElementById('carro').value.trim();
+    const marca  = document.getElementById('marca').value.trim();
+    const modelo = document.getElementById('modelo').value.trim();
+
+    // Validação no front-end
+    if (s !== 'napista' && !estado) { setStatus('⚠️ Selecione um estado.', 'empty'); return; }
+    if (s !== 'webmotors' && !carro) { setStatus('⚠️ Informe o modelo do carro.', 'empty'); return; }
+    if ((s === 'webmotors' || s === 'mobiauto') && !marca) { setStatus('⚠️ Informe a marca.', 'empty'); return; }
+    if (s === 'webmotors' && !modelo) { setStatus('⚠️ Informe o modelo (campo Modelo).', 'empty'); return; }
+
+    const btn = document.getElementById('btn-search');
+    btn.disabled = true;
+    document.getElementById('cards').innerHTML = '';
+    document.getElementById('results-header').style.display = 'none';
+    setStatus('⏳ Buscando anúncios, aguarde...', 'loading');
+
+    const params = new URLSearchParams({ site: s });
+    if (estado) params.set('estado', estado);
+    if (carro)  params.set('carro', carro);
+    if (marca)  params.set('marca', marca);
+    if (modelo) params.set('modelo', modelo);
+
+    try {
+      const resp = await fetch(`/get-dom?${params.toString()}`);
+      const data = await resp.json();
+
+      if (!resp.ok || data.error) {
+        setStatus('❌ ' + (data.error || 'Erro desconhecido.'), 'error');
+        return;
+      }
+
+      const lista = Array.isArray(data) ? data : [];
+      if (lista.length === 0) {
+        setStatus('⚠️ Nenhum anúncio encontrado para essa busca.', 'empty');
+        return;
+      }
+
+      setStatus('', '');
+      const header = document.getElementById('results-header');
+      header.textContent = `${lista.length} anúncio(s) encontrado(s)`;
+      header.style.display = 'block';
+
+      const container = document.getElementById('cards');
+      lista.forEach(c => container.appendChild(criarCard(c)));
+
+    } catch (err) {
+      setStatus('❌ Falha na comunicação com o servidor: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // Permite buscar pressionando Enter nos campos de texto
+  ['carro', 'marca', 'modelo'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') buscar();
+    });
+  });
+</script>
+
+</body>
+</html>
